@@ -1,0 +1,29 @@
+{
+  "name": "backbone-warehouse",
+  "main": "backbone-warehouse.js",
+  "version": "0.9.0",
+  "authors": [
+    "Brandon Carl <brandon.j.carl@gmail.com>"
+  ],
+  "description": "Async data, file and module loading for Backbone",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "backbone",
+    "data",
+    "async",
+    "loader",
+    "requirejs"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
