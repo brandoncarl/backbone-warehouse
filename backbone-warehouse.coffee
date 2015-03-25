@@ -134,25 +134,48 @@
 
       Fetches stores, and returns a promise resolving to an object containing the stores by name.
 
-      <String>  names : names of stores, separated by spaces
-      <Boolean> force : whether to force a refresh of the stores
+      <String>   names  : names of stores, separated by spaces
+      <Boolean>  force  : whether to force a refresh of the stores
+      <Function> [done] : optional callback (err, data)
 
     ###
 
-    fetch: (names = "", force = false) ->
+    fetch: (names = "", force = false, done) ->
 
-      if names is "" then return Warehouse::wrap _P.resolve({})
+      # Allow polymorphism
+      if isFn(force)
+        done  = force
+        force = false
 
-      # Convert string to array
-      names = names.trim().split(/\s+/) if "string" is typeof names
 
-      # Map promises
-      promises = (@fetchOne(name, force) for name in names)
+      # Create subfunctions to store "force" setting
+      fetchOne = @fetchOne
+      iterator = (name) -> return ((callback) -> fetchOne name, force, callback)
 
-      Warehouse::wrap _P.all(promises).then (arr) ->
-        obj = {}
-        obj[name] = arr[i] for name, i in names
-        _P.resolve obj
+      # Create main work function
+      fn = (cb) ->
+
+        if names is "" then return cb(null, {})
+
+        # Convert string to array
+        names = names.trim().split(/\s+/) if "string" is typeof names
+
+        # Create array of tasks to run
+        tasks = (iterator(name) for name in names)
+
+        all tasks, (err, data) ->
+          if err then return cb err, {}
+          obj = {}
+          obj[name] = data[i] for name, i in names
+          cb null, obj
+
+      # Allow promise to be returned
+      if isUndef(done) and __promise
+        return __promise (resolve, reject) ->
+          fn (err, data) -> if err then reject(err) else resolve data
+          return
+      else
+        fn done
 
 
     data: (names = "", force = false) -> @fetch names, force
