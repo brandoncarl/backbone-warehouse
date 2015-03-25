@@ -3,6 +3,8 @@
 
   *** Warehouse ***
 
+  (c) 2015 Brandon Carl, Aventura Labs
+
   The Warehouse class provides easier access to Backbone's collections and models.
 
   A "store" refers to either a model or a collection. Stores are referenced by name, and maintain
