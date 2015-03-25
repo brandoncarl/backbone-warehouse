@@ -279,7 +279,7 @@
 
       Incorporates both data and requirejs-based loading.
 
-      <Function> [done] : optional callback (err, data)
+      <Function> [done] : optional callback (err, args...)
 
     ###
 
@@ -311,7 +311,7 @@
           all tasks, (err, args) -> if err then reject(err) else resolve [args[0]].concat(args[1])
           return
       else
-        all tasks, (err, args) -> done.apply null, [args[0]].concat(args[1])
+        all tasks, (err, args) -> done.apply null, [null, args[0]].concat(args[1])
 
 
     ###
