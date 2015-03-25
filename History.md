@@ -1,5 +1,5 @@
 
-v1.0.0
+2015-03-25 v1.0.0
 ----------------------------
 * Added License information to script and Readme
 * Updated Readme to reflect new formats
