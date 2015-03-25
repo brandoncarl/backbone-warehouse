@@ -131,9 +131,10 @@ Alias for `isFetched`
 
 ### Warehouse.fetchAndLoad(String names, Array modules, callback)
 
-Incorporates both data and RequireJS-based loading.
+Incorporates both data and RequireJS-based loading. Note that unlike RequireJS, we require an
+explicit error callback.
 
-`callback` should be of form `(data, module1, module2, ...)`
+`callback` should be of form `(err, data, module1, module2, ...)`
 
 ### Warehouse.fetchAll([force = false])
 
