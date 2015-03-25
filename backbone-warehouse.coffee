@@ -16,6 +16,7 @@
   • add          : adds instances of data stores
   • get          : returns a single store
   • fetch        : fetches a list of data stores (alias: data)
+  • fetchAll     : fetches all data stores
   • isFetched    : returns whether all specified stores have been fetched (alias: fetched)
   • fetchAndLoad : fetches data (like fetch) and modules (like require)
 
@@ -76,6 +77,7 @@
       return
 
 
+
     ###
 
       function add
@@ -94,6 +96,7 @@
       return
 
 
+
     ###
 
       function get
@@ -105,6 +108,7 @@
     ###
 
     get: (name) -> @stores[name].store
+
 
 
     ###
@@ -179,6 +183,7 @@
 
 
     data: (names = "", force = false) -> @fetch names, force
+
 
 
     ###
