@@ -3,6 +3,8 @@
 
   *** Warehouse ***
 
+  (c) 2015 Brandon Carl, Aventura Labs
+
   The Warehouse class provides easier access to Backbone's collections and models.
 
   A "store" refers to either a model or a collection. Stores are referenced by name, and maintain
@@ -16,6 +18,7 @@
   • add          : adds instances of data stores
   • get          : returns a single store
   • fetch        : fetches a list of data stores (alias: data)
+  • fetchAll     : fetches all data stores
   • isFetched    : returns whether all specified stores have been fetched (alias: fetched)
   • fetchAndLoad : fetches data (like fetch) and modules (like require)
 
@@ -28,20 +31,59 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
   __hasProp = {}.hasOwnProperty;
 
 (function() {
-  var Warehouse, freeExports, freeGlobal, freeModule, freeWindow, moduleExports, objectTypes, root, wrap, _P;
+  var Warehouse, all, freeExports, freeGlobal, freeModule, freeWindow, isFn, isUndef, moduleExports, objectTypes, root, __all, __promise;
+  __promise = null;
+  __all = null;
+  isFn = function(x) {
+    return typeof x === "function";
+  };
+  isUndef = function(x) {
+    return typeof x === "undefined";
+  };
+  all = function(tasks, done) {
+    var i, n, onComplete, onProgress, results, task, _i, _len, _results;
+    n = tasks.length;
+    results = {};
+    onComplete = function() {
+      var data, i, _i, _ref;
+      data = [];
+      for (i = _i = 0, _ref = tasks.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+        data.push(results[i]);
+      }
+      return done(null, data);
+    };
+    onProgress = function(pos) {
+      return function(err, single) {
+        if (err) {
+          return done(err);
+        }
+        results[pos] = single;
+        if (--n === 0) {
+          return onComplete();
+        }
+      };
+    };
+    _results = [];
+    for (i = _i = 0, _len = tasks.length; _i < _len; i = ++_i) {
+      task = tasks[i];
+      _results.push(task(onProgress(i)));
+    }
+    return _results;
+  };
   Warehouse = Warehouse = (function() {
     /*
     
           constructor
     
-          • [Object]   stores  : keys should be store names and values the store
-          • [Function] wrapper : a promise-wrapper (optional)
+          • [Object] stores  : keys should be store names and values the store
+          • [Object] plib    : a promise-wrapper (optional) { promise, all }
     */
 
-    function Warehouse(stores, wrapper) {
+    function Warehouse(stores, plib) {
       this.fetchOne = __bind(this.fetchOne, this);
-      if (wrapper != null) {
-        Warehouse.prototype.wrap = wrapper;
+      if (plib != null) {
+        __promise = plib.promise;
+        __all = plib.all;
       }
       this.stores = {};
       this.add(stores || {});
@@ -109,45 +151,75 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
     
           function fetch (alias: data)
     
-          Fetches stores, and returns a promise containing array stores.
+          Fetches stores, and returns a promise resolving to an object containing the stores by name.
     
-          <String>  names : names of stores, separated by spaces
-          <Boolean> force : whether to force a refresh of the stores
+          <String>   names  : names of stores, separated by spaces
+          <Boolean>  force  : whether to force a refresh of the stores
+          <Function> [done] : optional callback (err, data)
     */
 
 
-    Warehouse.prototype.fetch = function(names, force) {
-      var name, promises;
+    Warehouse.prototype.fetch = function(names, force, done) {
+      var fetchOne, fn, iterator;
       if (names == null) {
         names = "";
       }
       if (force == null) {
         force = false;
       }
-      if (names === "") {
-        return Warehouse.prototype.wrap(_P.resolve({}));
+      if (isFn(force)) {
+        done = force;
+        force = false;
       }
-      if ("string" === typeof names) {
-        names = names.trim().split(/\s+/);
+      fetchOne = this.fetchOne;
+      iterator = function(name) {
+        return (function(callback) {
+          return fetchOne(name, force, callback);
+        });
+      };
+      fn = function(cb) {
+        var name, tasks;
+        if (names === "") {
+          return cb(null, {});
+        }
+        if ("string" === typeof names) {
+          names = names.trim().split(/\s+/);
+        }
+        tasks = (function() {
+          var _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = names.length; _i < _len; _i++) {
+            name = names[_i];
+            _results.push(iterator(name));
+          }
+          return _results;
+        })();
+        return all(tasks, function(err, data) {
+          var i, obj, _i, _len;
+          if (err) {
+            return cb(err, {});
+          }
+          obj = {};
+          for (i = _i = 0, _len = names.length; _i < _len; i = ++_i) {
+            name = names[i];
+            obj[name] = data[i];
+          }
+          return cb(null, obj);
+        });
+      };
+      if (isUndef(done) && __promise) {
+        return __promise(function(resolve, reject) {
+          fn(function(err, data) {
+            if (err) {
+              return reject(err);
+            } else {
+              return resolve(data);
+            }
+          });
+        });
+      } else {
+        return fn(done);
       }
-      promises = (function() {
-        var _i, _len, _results;
-        _results = [];
-        for (_i = 0, _len = names.length; _i < _len; _i++) {
-          name = names[_i];
-          _results.push(this.fetchOne(name, force));
-        }
-        return _results;
-      }).call(this);
-      return Warehouse.prototype.wrap(_P.all(promises).then(function(arr) {
-        var i, obj, _i, _len;
-        obj = {};
-        for (i = _i = 0, _len = names.length; _i < _len; i = ++_i) {
-          name = names[i];
-          obj[name] = arr[i];
-        }
-        return _P.resolve(obj);
-      }));
     };
 
     Warehouse.prototype.data = function(names, force) {
@@ -168,50 +240,67 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
     
           <String>   name  : name of store
           <Boolean>  force : whether to force a refresh of the store
+          <Function> [done] : optional callback (err, data)
     */
 
 
     Warehouse.prototype.fetchOne = function(name, force, done) {
-      var ev, fetchOne, store,
+      var fn,
         _this = this;
       if (force == null) {
         force = false;
       }
-      store = this.stores[name];
-      ev = this.keyEvent(store);
-      fetchOne = function() {
-        store.state = "fetching";
-        return Warehouse.prototype.wrap(new _P(function(resolve, reject) {
+      if (isFn(force)) {
+        done = force;
+        force = false;
+      }
+      fn = function(cb) {
+        var ev, fetchOne, store;
+        store = _this.stores[name];
+        ev = _this.keyEvent(store);
+        fetchOne = function() {
+          store.state = "fetching";
           store.store.once(ev, function() {
             store.state = "fetched";
-            return resolve(store.store);
+            return cb(null, store.store);
           });
           return store.store.fetch({
             reset: true,
-            error: reject
+            error: cb
           });
-        }));
-      };
-      switch (store.state) {
-        case "new":
-          return fetchOne();
-        case "fetched":
-          if (force) {
+        };
+        switch (store.state) {
+          case "new":
             return fetchOne();
-          } else {
-            return Warehouse.prototype.wrap(_P.resolve(store.store));
-          }
-          break;
-        case "fetching":
-          return Warehouse.prototype.wrap(new _P(function(resolve, reject) {
+          case "fetched":
+            if (force) {
+              return fetchOne();
+            } else {
+              return cb(null, store.store);
+            }
+            break;
+          case "fetching":
             return store.store.once(ev, function() {
               if (!force) {
-                return resolve(store.store);
+                return cb(null, store.store);
               }
               store.state = "fetched";
-              return _this.fetchOne(name, true);
+              return _this.fetchOne(name, true, cb);
             });
-          }));
+        }
+      };
+      if (isUndef(done) && __promise) {
+        return __promise(function(resolve, reject) {
+          fn(function(err, data) {
+            if (err) {
+              return reject(err);
+            } else {
+              return resolve(data);
+            }
+          });
+        });
+      } else {
+        return fn(done);
       }
     };
 
@@ -256,34 +345,60 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
           function fetchAndLoad
     
           Incorporates both data and requirejs-based loading.
+    
+          <Function> [done] : optional callback (err, args...)
     */
 
 
     Warehouse.prototype.fetchAndLoad = function(data, modules, done) {
-      var promises;
+      var fetcher, fn, loader, noop, tasks,
+        _this = this;
       if (data == null) {
         data = "";
       }
       if (modules == null) {
         modules = [];
       }
-      done = done || function() {};
-      promises = [this.fetch(data)];
+      fetcher = function(callback) {
+        return _this.fetch(data, callback);
+      };
+      tasks = [fetcher];
       if (!(modules != null) || !modules.length) {
-        promises.push(_P.resolve([]));
+        noop = function(callback) {
+          return callback(null, []);
+        };
+        tasks.push(noop);
       } else {
         if (!(typeof requirejs !== "undefined" && requirejs !== null)) {
           throw new Error("RequireJS is needed but missing");
         }
-        promises.push(new _P(function(resolve, reject) {
+        loader = function(callback) {
           return requirejs(modules, function() {
-            return resolve([].slice.call(arguments, 0));
+            return callback(null, [].slice.call(arguments, 0));
           });
-        }));
+        };
+        tasks.push(loader);
       }
-      return Warehouse.prototype.wrap(_P.all(promises).then(function(args) {
-        return done.apply(null, [args[0]].concat(args[1]));
-      }));
+      fn = function(cb) {
+        return all(tasks, function(err, args) {
+          return cb.apply(null, [args[0]].concat(args[1]));
+        });
+      };
+      if (isUndef(done) && __promise) {
+        return __promise(function(resolve, reject) {
+          all(tasks, function(err, args) {
+            if (err) {
+              return reject(err);
+            } else {
+              return resolve([args[0]].concat(args[1]));
+            }
+          });
+        });
+      } else {
+        return all(tasks, function(err, args) {
+          return done.apply(null, [null, args[0]].concat(args[1]));
+        });
+      }
     };
 
     /*
@@ -291,12 +406,19 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
           function fetchAll
     
           Fetches all collections
+    
+          <Function> [done] : optional callback (err, data)
     */
 
 
-    Warehouse.prototype.fetchAll = function(force) {
-      var key, names, val, _ref;
+    Warehouse.prototype.fetchAll = function(force, done) {
+      var fn, key, names, val, _ref,
+        _this = this;
       if (force == null) {
+        force = false;
+      }
+      if (isFn(force)) {
+        done = force;
         force = false;
       }
       names = [];
@@ -306,27 +428,27 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
         val = _ref[key];
         names.push(key);
       }
-      return this.fetch(names);
+      fn = function(cb) {
+        return _this.fetch(names, force, cb);
+      };
+      if (isUndef(done) && __promise) {
+        return __promise(function(resolve, reject) {
+          fn(function(err, data) {
+            if (err) {
+              return reject(err);
+            } else {
+              return resolve(data);
+            }
+          });
+        });
+      } else {
+        return fn(done);
+      }
     };
 
     return Warehouse;
 
   })();
-  /*
-  
-      Promiz (and wrappers)
-  
-      Very compact promise library. Promiz.js Copyright (c) 2014 Zolmeister: https://github.com/Zolmeister/promiz
-      Updated to use Promiz with no global by removing module.exports and globals at end
-  */
-
-  !function(){function a(a){global.setImmediate?setImmediate(a):global.importScripts?setTimeout(a):(c++,d[c]=a,global.postMessage(c,"*"))}function b(c){function d(a,b,c,d){if("object"!=typeof j&&"function"!=typeof j||"function"!=typeof a)d();else try{var e=0;a.call(j,function(a){e++||(j=a,b())},function(a){e++||(j=a,c())})}catch(f){j=f,c()}}function e(){var a;try{a=j&&j.then}catch(b){return j=b,i=2,e()}d(a,function(){i=1,e()},function(){i=2,e()},function(){try{1==i&&"function"==typeof f?j=f(j):2==i&&"function"==typeof g&&(j=g(j),i=1)}catch(b){return j=b,l()}j==h?(j=TypeError(),l()):d(a,function(){l(3)},l,function(){l(1==i&&3)})})}if("function"!=typeof c&&void 0!=c)throw TypeError();var f,g,h=this,i=0,j=0,k=[];h.promise=h,h.resolve=function(b){return f=this.fn,g=this.er,i||(j=b,i=1,a(e)),this},h.reject=function(b){return f=this.fn,g=this.er,i||(j=b,i=2,a(e)),this},h.then=function(a,c){var d=new b;return d.fn=a,d.er=c,3==i?d.resolve(j):4==i?d.reject(j):k.push(d),d},h["catch"]=function(a){return h.then(null,a)};var l=function(a){i=a||4,k.map(function(a){3==i&&a.resolve(j)||a.reject(j)})};try{"function"==typeof c&&c(h.resolve,h.reject)}catch(m){h.reject(m)}return h}global=this;var c=1,d={},e=!1;global.setImmediate||global.addEventListener("message",function(b){if(b.source==global)if(e)a(d[b.data]);else{e=!0;try{d[b.data]()}catch(b){}delete d[b.data],e=!1}}),b.resolve=function(a){if(1!=this._d)throw TypeError();return new b(function(b){b(a)})},b.reject=function(a){if(1!=this._d)throw TypeError();return new b(function(b,c){c(a)})},b.all=function(a){function c(b,e){if(e)return d.resolve(e);if(b)return d.reject(b);var f=a.reduce(function(a,b){return b&&b.then?a+1:a},0);0==f&&d.resolve(a),a.map(function(b,d){b&&b.then&&b.then(function(b){return a[d]=b,c(),b},c)})}if(1!=this._d)throw TypeError();if(!(a instanceof Array))return b.reject(TypeError());var d=new b;return c(),d},b.race=function(a){function c(b,e){if(e)return d.resolve(e);if(b)return d.reject(b);var f=a.reduce(function(a,b){return b&&b.then?a+1:a},0);0==f&&d.resolve(a),a.map(function(a){a&&a.then&&a.then(function(a){c(null,a)},c)})}if(1!=this._d)throw TypeError();if(!(a instanceof Array))return b.reject(TypeError());if(0==a.length)return new b;var d=new b;return c(),d},b._d=1,Promiz=b}();;
-
-  _P = Promiz;
-  wrap = function(x) {};
-  Warehouse.prototype.wrap = function(x) {
-    return x;
-  };
   /*
   
       Module-loading code (as used in Lo-dash)
