@@ -218,7 +218,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
           });
         });
       } else {
-        return fn(done);
+        return fn(done || function() {});
       }
     };
 
@@ -300,7 +300,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
           });
         });
       } else {
-        return fn(done);
+        return fn(done || function() {});
       }
     };
 
@@ -395,6 +395,9 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
           });
         });
       } else {
+        if (done == null) {
+          done = function() {};
+        }
         return all(tasks, function(err, args) {
           return done.apply(null, [null, args[0]].concat(args[1]));
         });
@@ -442,7 +445,7 @@ var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments)
           });
         });
       } else {
-        return fn(done);
+        return fn(done || function() {});
       }
     };
 
