@@ -28,6 +28,8 @@
 (->
 
   # Set up helpers
+  __promise = null
+  __all     = null
   isFn      = (x) -> typeof x is "function"
   isUndef   = (x) -> typeof x is "undefined"
 
@@ -57,15 +59,16 @@
 
       constructor
 
-      • [Object]   stores  : keys should be store names and values the store
-      • [Function] wrapper : a promise-wrapper (optional)
+      • [Object] stores  : keys should be store names and values the store
+      • [Object] plib    : a promise-wrapper (optional) { promise, all }
 
     ###
 
-    constructor: (stores, wrapper) ->
+    constructor: (stores, plib) ->
 
-      # Allow for all promises to be wrapped
-      if wrapper? then Warehouse::wrap = wrapper
+      if plib?
+        __promise = plib.promise
+        __all     = plib.all
 
       @stores = {}
       @add stores or {}
