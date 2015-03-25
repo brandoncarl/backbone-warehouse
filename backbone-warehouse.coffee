@@ -308,10 +308,10 @@
       # Allow promise to be returned
       if isUndef(done) and __promise
         return __promise (resolve, reject) ->
-          fn (err, data) -> if err then reject(err) else resolve data
+          all tasks, (err, args) -> if err then reject(err) else resolve [args[0]].concat(args[1])
           return
       else
-        fn done
+        all tasks, (err, args) -> done.apply null, [args[0]].concat(args[1])
 
 
     ###
