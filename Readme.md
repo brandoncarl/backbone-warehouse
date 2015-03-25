@@ -1,7 +1,8 @@
 # Backbone Warehouse
 
 Backbone Warehouse is like RequireJS, but for data, file AND modules. It allows easy access of data
-across your application, with features like group loading.
+across your application, with features like group loading. It's lightweight, only 1.4kb gzipped
+and minified.
 
 Warehouse can be used with typical (err, args...) callbacks, or you can optionally pass in functions
 to create promises. Underneath, encapsulates Backbone's sync methods for data, and wraps
