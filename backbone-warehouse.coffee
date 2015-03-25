@@ -274,28 +274,39 @@
 
       Incorporates both data and requirejs-based loading.
 
+      <Function> [done] : optional callback (err, data)
+
     ###
 
     fetchAndLoad: (data = "", modules = [], done)  ->
 
-      done = done or ->
-
       # Create promises array (starting with data)
-      promises = [@fetch(data)]
+      fetcher = (callback) => @fetch(data, callback)
+      tasks   = [fetcher]
 
       # When no modules are required...
       if not modules? or not modules.length
-        promises.push _P.resolve []
+        noop = (callback) -> callback(null, [])
+        tasks.push noop
 
       # Create promise form of require. We pass the necesary arguments back
       else
         if not requirejs? then throw new Error "RequireJS is needed but missing"
-
-        promises.push new _P (resolve, reject) ->
-          requirejs modules, -> resolve [].slice.call(arguments, 0)
+        loader = (callback) ->
+          requirejs modules, -> callback null, [].slice.call(arguments, 0)
+        tasks.push loader
 
       # The requirejs modules (if available) are in the second argument
-      Warehouse::wrap _P.all(promises).then (args) -> done.apply null, [args[0]].concat(args[1])
+      fn = (cb) ->
+        all tasks, (err, args) -> cb.apply null, [args[0]].concat(args[1])
+
+      # Allow promise to be returned
+      if isUndef(done) and __promise
+        return __promise (resolve, reject) ->
+          fn (err, data) -> if err then reject(err) else resolve data
+          return
+      else
+        fn done
 
 
     ###
