@@ -304,18 +304,31 @@
 
       Fetches all collections
 
+      <Function> [done] : optional callback (err, data)
+
     ###
 
-    fetchAll: (force = false) ->
+    fetchAll: (force = false, done) ->
+
+      # Allow polymorphism
+      if isFn(force)
+        done  = force
+        force = false
 
       names = []
 
       for own key, val of (@stores or {})
         names.push key
 
-      @fetch names
+      fn = (cb) => @fetch names, force, cb
 
-
+      # Allow promise to be returned
+      if isUndef(done) and __promise
+        return __promise (resolve, reject) ->
+          fn (err, data) -> if err then reject(err) else resolve data
+          return
+      else
+        fn done
 
 
 
