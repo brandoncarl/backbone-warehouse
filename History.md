@@ -1,6 +1,8 @@
 
-v0.9.1
+v1.0.0
 ----------------------------
+* Updated Readme to reflect new formats
+* Refactored #fetch, #fetchOne, #fetchAndLoad and #fetch all for promises/callbacks
 * Added more flexibility to passed-in promise library
 * Removed inline promise library
 * Added async helper `all`

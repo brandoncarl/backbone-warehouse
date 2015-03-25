@@ -3,8 +3,8 @@
 Backbone Warehouse is like RequireJS, but for data, file AND modules. It allows easy access of data
 across your application, with features like group loading.
 
-Warehouse uses promises for data fetching, but retains the RequireJS-style callback for its helper
-function, `fetchAndLoad`. Underneath, encapsulates Backbone's sync methods for data, and wraps
+Warehouse can be used with typical (err, args...) callbacks, or you can optionally pass in functions
+to create promises. Underneath, encapsulates Backbone's sync methods for data, and wraps
 RequireJS for files and modules.
 
 In all examples, a "Store" refers to *either* a Model or a Collection.
@@ -27,13 +27,21 @@ $ bower install --save backbone-warehouse requirejs
     profile  : new Profile()
   });
 
+  // To use your favorite promise library, do this instead!
+  var warehouse = new Warehouse({
+    todos    : new Todos(),
+    contacts : new Contacts(),
+    profile  : new Profile()
+  }, { promise : when.promise, all : when.all });
+
 ```
 
 
 ## Examples
 
-```js
+### Synchronous methods
 
+```
   // We can access a collection or model before fetching, just like in Backbone
   var myTodos = warehouse.get("todos");
 
@@ -42,8 +50,14 @@ $ bower install --save backbone-warehouse requirejs
   var isFetched = warehouse.isFetched("todos contacts profile")
   console.log(isFetched);   // prints false
 
+```
+
+### Using callbacks
+
+```js
+
   // Simple data fetch (assumes Backbone is a global)
-  warehouse.fetch("todos contacts profile").then(function(data) {
+  warehouse.fetch("todos contacts profile", function(err, data) {
 
     // This will not be executed until all data has been fetched
     console.log(data.todos);
@@ -51,9 +65,29 @@ $ bower install --save backbone-warehouse requirejs
   });
 
   // Data and module-loading (assumes require is a global)
-  // This is the only function that uses "async" callbacks, so that modules can be named in
-  // the callback function.
+  // Notice that "data" is prepended to typical RequireJS callback
   warehouse.fetchAndLoad("todos", ["jquery"], function(data, jquery) {
+
+  });
+
+```
+
+### Using promises
+
+```js
+
+  // Simple data fetch (assumes Backbone is a global)
+  warehouse.fetch("todos contacts profile", function(err, data) {
+
+    // This will not be executed until all data has been fetched
+    console.log(data.todos);
+
+  });
+
+  // Data and module-loading (assumes require is a global)
+  // Since promise results are returned as an array, you'll want to use a convenience function
+  // that spreads them out into function arguments.
+  warehouse.fetchAndLoad("todos", ["jquery"]).spread(function(data, jquery) {
 
   });
 
