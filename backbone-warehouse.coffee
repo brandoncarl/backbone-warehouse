@@ -27,6 +27,10 @@
 
 (->
 
+  # Set up helpers
+  isFn      = (x) -> typeof x is "function"
+  isUndef   = (x) -> typeof x is "undefined"
+
   Warehouse = class Warehouse
 
     ###
