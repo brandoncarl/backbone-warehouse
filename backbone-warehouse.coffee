@@ -31,6 +31,26 @@
   isFn      = (x) -> typeof x is "function"
   isUndef   = (x) -> typeof x is "undefined"
 
+  # Async helper all
+  all = (tasks, done) ->
+
+    n = tasks.length
+    results = {}
+
+    onComplete = ->
+      data = []
+      data.push(results[i]) for i in [0...tasks.length]
+      done null, data
+
+    onProgress = (pos) ->
+      (err, single) ->
+        if err then return done err
+        results[pos] = single
+        if --n is 0 then onComplete()
+
+    task(onProgress(i)) for task, i in tasks
+
+
   Warehouse = class Warehouse
 
     ###

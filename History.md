@@ -1,4 +1,5 @@
 
 v0.9.1
 ----------------------------
-* Added helper functions isFn, isUndef
+* Added async helper `all`
+* Added helper functions `isFn`, `isUndef`
