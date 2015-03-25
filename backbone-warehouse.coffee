@@ -181,7 +181,7 @@
           fn (err, data) -> if err then reject(err) else resolve data
           return
       else
-        fn done
+        fn(done or ->)
 
 
     data: (names = "", force = false) -> @fetch names, force
@@ -245,7 +245,7 @@
           fn (err, data) -> if err then reject(err) else resolve data
           return
       else
-        fn done
+        fn(done or ->)
 
 
     ###
@@ -313,6 +313,7 @@
           all tasks, (err, args) -> if err then reject(err) else resolve [args[0]].concat(args[1])
           return
       else
+        done ?= ->
         all tasks, (err, args) -> done.apply null, [null, args[0]].concat(args[1])
 
 
@@ -346,7 +347,7 @@
           fn (err, data) -> if err then reject(err) else resolve data
           return
       else
-        fn done
+        fn(done or ->)
 
 
 

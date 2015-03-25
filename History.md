@@ -1,4 +1,9 @@
 
+2015-03-25 v1.0.1
+----------------------------
+* Fixes errors when no promise and no callback present
+
+
 2015-03-25 v1.0.0
 ----------------------------
 * Added License information to script and Readme
