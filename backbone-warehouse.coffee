@@ -189,44 +189,56 @@
 
       <String>   name  : name of store
       <Boolean>  force : whether to force a refresh of the store
+      <Function> [done] : optional callback (err, data)
 
     ###
 
     fetchOne: (name, force = false, done) =>
 
-      store = @stores[name]
-      ev    = @keyEvent store
+      # Allow polymorphism
+      if isFn(force)
+        done  = force
+        force = false
 
-      # Helper function to do the fetching
-      fetchOne = ->
+      fn = (cb) =>
 
-        store.state = "fetching"
+        store = @stores[name]
+        ev    = @keyEvent store
 
-        Warehouse::wrap new _P (resolve, reject) ->
+        # Helper function to do the fetching
+        fetchOne = ->
+
+          store.state = "fetching"
 
           store.store.once ev, ->
             store.state = "fetched"
-            resolve store.store
+            cb null, store.store
 
           store.store.fetch
             reset : true
-            error : reject
+            error : cb
 
+        switch store.state
 
-      return switch store.state
+          when "new"
+            fetchOne()
 
-        when "new"
-          fetchOne()
+          when "fetched"
+            if force then fetchOne() else cb(null, store.store)
 
-        when "fetched"
-          if force then fetchOne() else Warehouse::wrap _P.resolve store.store
-
-        when "fetching"
-          Warehouse::wrap new _P (resolve, reject) =>
+          when "fetching"
             store.store.once ev, =>
-              if not force then return resolve store.store
+              if not force then return cb(null, store.store)
               store.state = "fetched"
-              @fetchOne name, true
+              @fetchOne name, true, cb
+
+      # Allow promise to be returned
+      if isUndef(done) and __promise
+        return __promise (resolve, reject) ->
+          fn (err, data) -> if err then reject(err) else resolve data
+          return
+      else
+        fn done
 
 
     ###
